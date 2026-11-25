@@ -10,6 +10,19 @@ export const colors = {
   border: '#E6D9D3',
   soft: '#F7F4F2',
   white: '#FFFFFF',
+  // Extra accents used for a livelier look (Community and the professional app).
+  mint: '#2FA38A',
+  mintPale: '#DDF3E6',
+  mintDark: '#216B45',
+  sun: '#E5A21B',
+  sunPale: '#FFF1CC',
+  sunDark: '#8A5A00',
+  sky: '#3E8FD6',
+  skyPale: '#DCEEFB',
+  skyDark: '#1F5F93',
+  plum: '#7A4FC0',
+  plumPale: '#EFE6FA',
+  plumDark: '#5B3A8E',
 };
 
 export const fonts = {

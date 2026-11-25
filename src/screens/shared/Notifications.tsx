@@ -5,6 +5,7 @@ import { Card, Empty, Icon, Screen, Text, styles } from '../../components/ui';
 import { useStore } from '../../store';
 import { useApp } from '../../role';
 import { useI18n } from '../../i18n';
+import { openLink } from '../../components/links';
 
 export default function Notifications({ navigation }: any) {
   const { s, api } = useStore();
@@ -19,7 +20,8 @@ export default function Notifications({ navigation }: any) {
     >
       {list.length === 0 ? <Empty icon="bell" title="You are all caught up" /> : null}
       {list.map((n) => (
-        <Card key={n.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: n.unread ? colors.pale : colors.white, borderColor: n.unread ? colors.pale : colors.line }}>
+        <Pressable key={n.id} disabled={!n.link} onPress={() => { api.markRead(role, n.id); openLink(navigation, role, n.link); }}>
+        <Card style={{ flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: n.unread ? colors.pale : colors.white, borderColor: n.unread ? colors.pale : colors.line }}>
           <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }}>
             <Icon name={n.icon} size={18} color={colors.coralDark} />
           </View>
@@ -28,7 +30,9 @@ export default function Notifications({ navigation }: any) {
             <Text style={styles.cap}>{tf(n.sub, n.vars || {})}</Text>
           </View>
           <Text style={styles.cap}>{t(n.when)}</Text>
+          {n.link ? <Icon name="chevron-right" size={16} color={colors.gray} /> : null}
         </Card>
+        </Pressable>
       ))}
     </Screen>
   );

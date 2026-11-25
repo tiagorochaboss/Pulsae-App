@@ -2,23 +2,46 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { colors, fonts } from '../../theme';
 import { Btn, Card, Chip, Field, Icon, Notice, Screen, Text, styles } from '../../components/ui';
-import { FAQ } from '../../data';
+import { FAQ_CUSTOMER, FAQ_PRO } from '../../faq';
+import { useApp } from '../../role';
 
 export function HelpCenter({ navigation }: any) {
-  const [open, setOpen] = useState(-1);
+  const { role } = useApp();
+  const groups = role === 'pro' ? FAQ_PRO : FAQ_CUSTOMER;
+  const [open, setOpen] = useState('');
+  const [q, setQ] = useState('');
+  const k = q.trim().toLowerCase();
   return (
-    <Screen title="Help centre" onBack={() => navigation.goBack()} footer={<Btn label="Contact us" kind="outline" onPress={() => navigation.navigate('ContactUs')} />}>
-      {FAQ.map((f, i) => (
-        <Pressable key={i} onPress={() => setOpen(open === i ? -1 : i)}>
-          <Card style={{ gap: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.ink }}>{f.q}</Text>
-              <Icon name={open === i ? 'chevron-up' : 'chevron-down'} size={18} color={colors.gray} />
+    <Screen title={role === 'pro' ? 'Help centre for professionals' : 'Help centre'} onBack={() => navigation.goBack()} footer={<Btn label="Contact us" kind="outline" onPress={() => navigation.navigate('ContactUs')} />}>
+      <Field label="Search" value={q} onChangeText={setQ} placeholder="Search the help centre" />
+      {groups.map((g) => {
+        const items = g.items.filter((f) => !k || (f.q + ' ' + f.a).toLowerCase().includes(k));
+        if (items.length === 0) return null;
+        return (
+          <View key={g.title} style={{ gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 6 }}>
+              <Icon name={g.icon} size={18} color={colors.coralDark} />
+              <Text style={styles.h2}>{g.title}</Text>
             </View>
-            {open === i ? <Text style={styles.p}>{f.a}</Text> : null}
-          </Card>
-        </Pressable>
-      ))}
+            {items.map((f) => {
+              const id = g.title + f.q;
+              const on = open === id || !!k;
+              return (
+                <Pressable key={id} onPress={() => setOpen(open === id ? '' : id)}>
+                  <Card style={{ gap: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={{ flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.ink }}>{f.q}</Text>
+                      <Icon name={on ? 'chevron-up' : 'chevron-down'} size={18} color={colors.gray} />
+                    </View>
+                    {on ? <Text style={styles.p}>{f.a}</Text> : null}
+                  </Card>
+                </Pressable>
+              );
+            })}
+          </View>
+        );
+      })}
+      <Text style={[styles.cap, { textAlign: 'center' }]}>Cannot find your answer? Contact us and we will help.</Text>
     </Screen>
   );
 }

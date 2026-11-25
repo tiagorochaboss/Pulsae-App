@@ -2,15 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { colors, fonts } from '../../theme';
 import { Btn, Icon, Radio, Screen, Section, Text, Chip, Notice } from '../../components/ui';
-import { PROS } from '../../data';
-import { slotsFor, useStore } from '../../store';
+import { PROS, ME_PRO_ID, placeOf } from '../../data';
+import { pricedPros, slotsFor, useStore } from '../../store';
 import { useI18n } from '../../i18n';
 import { addDaysIso, dayName, fromIso, todayIso, fmtTime } from '../../lib';
 
 export default function ChooseTime({ navigation, route }: any) {
-  const { s } = useStore();
+  const { s, api } = useStore();
+  const packId: string | undefined = route.params.packId;
+  const pack = packId ? s.packs.find((x) => x.id === packId) : undefined;
   const { lang, tf, t } = useI18n();
-  const pro = PROS.find((p) => p.id === route.params.id) || PROS[0];
+  const pro = pricedPros(s).find((p) => p.id === route.params.id) || PROS[0];
   const days = Array.from({ length: 14 }, (_, i) => addDaysIso(todayIso(), i));
   const [date, setDate] = useState(days.find((d) => slotsFor(s, pro.id, d).length > 0) || days[0]);
   const [time, setTime] = useState('');
@@ -28,15 +30,31 @@ export default function ChooseTime({ navigation, route }: any) {
   }, [where, s.addresses.customer.length]);
 
   const addr = s.addresses.customer.find((a) => a.id === addrId);
-  const whereText = needsAddress ? (addr ? addr.line : where) : tf('{p}\'s place', { p: pro.name });
+  const myPlace = pro.id === ME_PRO_ID ? (s.addresses.pro.find((a) => a.isDefault) || s.addresses.pro[0])?.line || placeOf(pro) : placeOf(pro);
+  const whereText = needsAddress ? (addr ? addr.line : where) : myPlace;
+  const notes = needsAddress && addr ? addr.notes : '';
   const ready = time !== '' && (!needsAddress || !!addr);
 
   return (
     <Screen
       title="Choose a time"
       onBack={() => navigation.goBack()}
-      footer={<Btn label="Continue" disabled={!ready} onPress={() => navigation.navigate('Checkout', { id: pro.id, date, time, where: whereText })} />}
+      footer={
+        pack ? (
+          <Btn
+            label="Book this session"
+            disabled={!ready}
+            onPress={() => {
+              const id = api.bookFromPack(pack.id, date, time, whereText, notes);
+              navigation.replace('Confirmed', { ids: [id], total: 0, mode: 'packUse', proId: pro.id, date, time, where: whereText, notes, left: pack.total - pack.used - 1 });
+            }}
+          />
+        ) : (
+          <Btn label="Continue" disabled={!ready} onPress={() => navigation.navigate('Checkout', { id: pro.id, date, time, where: whereText, notes })} />
+        )
+      }
     >
+      {pack ? <Notice icon="gift" text={tf('This session is one of your {n} remaining prepaid sessions with {p}. Nothing to pay.', { n: pack.total - pack.used, p: pro.name })} /> : null}
       <Section title="Day">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
           {days.map((d) => {
@@ -81,7 +99,7 @@ export default function ChooseTime({ navigation, route }: any) {
       ) : (
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <Icon name="map-pin" size={16} color={colors.gray} />
-          <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: colors.gray }}>{t(pro.area) + (lang === 'ar' ? '، ' : ', ') + t('Riyadh')}</Text>
+          <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 13, color: colors.gray }}>{t(pro.area) + (lang === 'ar' ? '، ' : ', ') + t('Riyadh') + ' · ' + t('The exact address is shown in your booking.')}</Text>
         </View>
       )}
     </Screen>

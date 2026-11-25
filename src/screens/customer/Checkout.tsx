@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { colors, fonts } from '../../theme';
-import { Btn, Card, Check, Chip, Divider, Field, Line, Notice, Radio, Screen, Section, Stepper, Text } from '../../components/ui';
+import { Btn, Card, Check, Chip, Divider, Field, Icon, Line, Notice, Radio, Screen, Section, Stepper, Text } from '../../components/ui';
+import { AddressCard } from '../../components/Maps';
+import { Pressable } from 'react-native';
 import { PROS } from '../../data';
-import { nextDow, slotsFor, useStore } from '../../store';
+import { nextDow, pricedPros, slotsFor, useStore } from '../../store';
 import { useI18n } from '../../i18n';
 import { addDaysIso, dayName, fmtDate, fmtTime, fromIso, money, PACK_DISCOUNT, PROMOS } from '../../lib';
 
@@ -12,10 +14,11 @@ type Mode = 'single' | 'pack4' | 'pack8' | 'weekly';
 export default function Checkout({ navigation, route }: any) {
   const { s, api } = useStore();
   const { lang, tf, t } = useI18n();
-  const { id, date, time, where } = route.params;
-  const pro = PROS.find((p) => p.id === id) || PROS[0];
+  const { id, date, time, where, notes } = route.params;
+  const pro = pricedPros(s).find((p) => p.id === id) || PROS[0];
   const weeklyOffered = pro.id === 'p1' ? s.proProfile.weekly : true;
-  const packsOffered = pro.id === 'p1' ? { 4: s.proProfile.d4, 8: s.proProfile.d8 } : { 4: true, 8: true };
+  // Prepaid packs and their discounts are set by Pulsae and are always offered.
+  const packsOffered = { 4: true, 8: true };
 
   const [mode, setMode] = useState<Mode>('single');
   const [spw, setSpw] = useState(1);
@@ -24,7 +27,8 @@ export default function Checkout({ navigation, route }: any) {
   const [promo, setPromo] = useState(0);
   const [promoErr, setPromoErr] = useState('');
   const [useCredit, setUseCredit] = useState(false);
-  const [method, setMethod] = useState('card');
+  const defaultCard = s.cards.find((c) => c.isDefault) || s.cards[0];
+  const [method, setMethod] = useState(defaultCard ? defaultCard.id : 'apple');
   const [paying, setPaying] = useState(false);
 
   const unit = pro.price;
@@ -71,9 +75,10 @@ export default function Checkout({ navigation, route }: any) {
         slots,
         unit: mode === 'single' || mode === 'weekly' ? unit : Math.round((unit * (100 - discPct)) / 100),
         creditUsed: creditUsed,
+        notes,
       });
       setPaying(false);
-      navigation.replace('Confirmed', { ids: r.ids, seriesId: r.seriesId, total, mode, proId: pro.id, date, time });
+      navigation.replace('Confirmed', { ids: r.ids, seriesId: r.seriesId, total, mode, proId: pro.id, date, time, where, notes, packTotal: mode === 'pack4' ? 4 : mode === 'pack8' ? 8 : 0 });
     }, 1300);
   };
 
@@ -94,16 +99,16 @@ export default function Checkout({ navigation, route }: any) {
     >
       <Card style={{ gap: 4 }}>
         <Text style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>{pro.name}</Text>
-        <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: colors.gray }}>{fmtDate(date, lang) + ' · ' + fmtTime(time, lang)}</Text>
+        <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: colors.gray }}>{(mode === 'single' ? '' : t('First session') + ': ') + fmtDate(date, lang) + ' · ' + fmtTime(time, lang)}</Text>
         <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: colors.gray }}>{where}</Text>
       </Card>
 
       <Section title="How many sessions?">
         <View style={{ gap: 8 }}>
           {modeCard('single', '1 session', money(unit))}
-          {packsOffered[4] ? modeCard('pack4', '4 sessions', 'Once a week, same day and time', tf('{p}% off', { p: PACK_DISCOUNT[4] })) : null}
-          {packsOffered[8] ? modeCard('pack8', '8 sessions', 'Once a week, same day and time', tf('{p}% off', { p: PACK_DISCOUNT[8] })) : null}
-          {weeklyOffered ? modeCard('weekly', 'Repeat weekly', 'Charged each week, stop any time') : null}
+          {packsOffered[4] ? modeCard('pack4', '4 prepaid sessions', 'Pay now. Book the first one today, the rest whenever you like', tf('{p}% off', { p: PACK_DISCOUNT[4] })) : null}
+          {packsOffered[8] ? modeCard('pack8', '8 prepaid sessions', 'Pay now. Book the first one today, the rest whenever you like', tf('{p}% off', { p: PACK_DISCOUNT[8] })) : null}
+          {weeklyOffered ? modeCard('weekly', 'Repeat weekly', 'Booked automatically every week, charged weekly, stop any time') : null}
         </View>
       </Section>
 
@@ -143,7 +148,7 @@ export default function Checkout({ navigation, route }: any) {
       ) : null}
 
       {mode === 'pack4' || mode === 'pack8' ? (
-        <Notice text="All sessions are paid now. Sessions are booked on the same day and time each week. Cancelling a session more than 24 hours ahead gives you a rebooking credit." icon="calendar" />
+        <Notice text="You pay for all sessions now but book only the first one. The other sessions stay in your balance with this professional. Book each one whenever you want from My bookings. If you cancel a session more than 24 hours ahead, it goes back to your balance." icon="gift" />
       ) : null}
 
       <Section title="Promo code">
@@ -157,13 +162,22 @@ export default function Checkout({ navigation, route }: any) {
 
       <Section title="Payment method">
         <View style={{ gap: 8 }}>
-          <Radio on={method === 'card'} onPress={() => setMethod('card')} label={tf('Card ending {n}', { n: 4242 })} sub="Demo card" />
-          <Radio on={method === 'apple'} onPress={() => setMethod('apple')} label="Apple Pay" sub="Demo" />
+          <Radio on={method === 'apple'} onPress={() => setMethod('apple')} label="Apple Pay" sub="Pay with Face ID" />
+          {s.cards.map((c) => (
+            <Radio key={c.id} on={method === c.id} onPress={() => setMethod(c.id)} label={(c.type === 'credit' ? t('Credit card') : t('Debit card')) + ' · ' + c.brand + ' ' + tf('ending {n}', { n: c.last4 })} sub={tf('Expires {d}', { d: c.exp })} />
+          ))}
+          <Pressable onPress={() => navigation.navigate('AddCard')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 20, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.border }}>
+            <Icon name="plus" size={18} color={colors.coralDark} />
+            <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.coralDark }}>Add a credit or debit card</Text>
+          </Pressable>
         </View>
+        {mode === 'weekly' && method === 'apple' ? <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.gray }}>Weekly repeats are charged automatically, so we recommend a saved card.</Text> : null}
       </Section>
 
       <Card style={{ gap: 10 }}>
         <Line label={mode === 'weekly' ? tf('{n} sessions this week', { n: spw }) : tf('{n} × session', { n: count })} value={money(gross)} />
+        {count > 1 && mode !== 'weekly' ? <Line label="Booked now" value="1 session" /> : null}
+        {count > 1 && mode !== 'weekly' ? <Line label="Saved for later" value={tf('{n} sessions', { n: count - 1 })} /> : null}
         {discount > 0 ? <Line label={tf('Pack discount ({p}%)', { p: discPct })} value={'− ' + money(discount)} accent /> : null}
         {promoUsed > 0 ? <Line label="Promo code" value={'− ' + money(promoUsed)} accent /> : null}
         {creditUsed > 0 ? <Line label="Credits" value={'− ' + money(creditUsed)} accent /> : null}

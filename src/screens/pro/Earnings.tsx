@@ -5,7 +5,7 @@ import { Card, Divider, Line, Notice, Screen, Section, Text } from '../../compon
 import { ME_PRO_ID } from '../../data';
 import { State, useStore } from '../../store';
 import { useI18n } from '../../i18n';
-import { fmtDate, money, startOf, todayIso } from '../../lib';
+import { addDaysIso, fmtDate, money, startOf, todayIso } from '../../lib';
 
 const COMMISSION = 0.25;
 const FEE = 0.05;
@@ -14,10 +14,12 @@ export function earningsFor(s: State) {
   const mine = s.bookings
     .filter((b) => b.proId === ME_PRO_ID && (b.status === 'completed' || b.status === 'awaiting' || b.status === 'confirmed'))
     .sort((a, b) => startOf(a.date, a.time).getTime() - startOf(b.date, b.time).getTime());
-  const firstSeen: Record<string, boolean> = {};
+  // 25% applies to the first booking with a customer, and again if they return after more than 60 days.
+  const lastSeen: Record<string, string> = {};
   const rows = mine.map((b) => {
-    const first = !firstSeen[b.customer];
-    firstSeen[b.customer] = true;
+    const prev = lastSeen[b.customer];
+    const first = !prev || b.date > addDaysIso(prev, 60);
+    lastSeen[b.customer] = b.date;
     const commission = first ? Math.round(b.price * COMMISSION) : 0;
     const fee = Math.round(b.price * FEE);
     return { b, commission, fee, net: b.price - commission - fee };
@@ -51,7 +53,7 @@ export default function Earnings({ navigation }: any) {
         {done.map((r) => (
           <Card key={r.b.id} style={{ gap: 6 }}>
             <Line label={fmtDate(r.b.date, lang)} value={money(r.b.price)} bold />
-            {r.commission > 0 ? <Line label="Pulsae commission (25%, first booking)" value={'− ' + money(r.commission)} /> : <Line label="Pulsae commission (repeat booking)" value={money(0)} />}
+            {r.commission > 0 ? <Line label="Pulsae commission (25%, new customer)" value={'− ' + money(r.commission)} /> : <Line label="Pulsae commission (repeat booking)" value={money(0)} />}
             <Line label="Payment fee (5%)" value={'− ' + money(r.fee)} />
             <Divider />
             <Line label="You receive" value={money(r.net)} accent bold />

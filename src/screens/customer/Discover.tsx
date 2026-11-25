@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { colors, fonts, radius } from '../../theme';
-import { Avatar, BellButton, Card, Chip, Empty, Icon, Screen, Tag, Text, styles } from '../../components/ui';
+import { Avatar, BellButton, Card, Chip, Empty, Icon, Screen, Tag, Text, VerifiedBadge, styles } from '../../components/ui';
 import { Pro, PROS } from '../../data';
-import { DEFAULT_FILTERS, Filters, nextSlot, useStore } from '../../store';
+import { DEFAULT_FILTERS, Filters, nextSlot, pricedPros, useStore } from '../../store';
 import { useI18n } from '../../i18n';
 import { fmtShort, money } from '../../lib';
 
@@ -39,7 +39,7 @@ export default function Discover({ navigation }: any) {
   const { s, api } = useStore();
   const { t, tf, lang } = useI18n();
   const [q, setQ] = useState('');
-  const list = applyFilters(PROS, s.filters, q);
+  const list = applyFilters(pricedPros(s), s.filters, q);
   const count = activeFilterCount(s.filters);
   const unread = s.notifs.customer.filter((n) => n.unread).length;
 
@@ -95,6 +95,7 @@ export default function Discover({ navigation }: any) {
                   </Pressable>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                  <VerifiedBadge cert={p.cert} />
                   <Tag label={p.cert} />
                   <Tag label={tf('{n} years', { n: p.years })} tone="gray" />
                   <Tag label={p.gender} tone="gray" />

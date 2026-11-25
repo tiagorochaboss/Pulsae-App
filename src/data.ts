@@ -31,10 +31,36 @@ export const PROS: Pro[] = [
 
 export const ME_PRO_ID = 'p1';
 
-export const FAQ = [
-  { q: 'How do I book a session?', a: 'Open Discover, choose a professional, pick a day and time, then pay. Your booking is confirmed straight away.' },
-  { q: 'When is my payment released to the professional?', a: 'Pulsae holds your payment. After your session the professional marks it complete and you confirm it within 24 hours. The professional is paid 48 hours after your confirmation.' },
-  { q: 'Can I cancel a booking?', a: 'More than 24 hours before the session you get a rebooking credit valid for 30 days. Within 24 hours the session is charged in full.' },
-  { q: 'How does weekly repeat billing work?', a: 'You are charged each week for that week\'s sessions, 48 hours before the first one. You can stop the series at any time and it applies from the next charge.' },
-  { q: 'What if something went wrong?', a: 'Use "Report a problem" on the booking or contact us. We review every report.' },
+
+
+// Sample address of a professional's own place (clinic or studio). Shown to the customer after booking.
+export const placeOf = (p: Pro) => 'Sample clinic, ' + p.area + ', Riyadh';
+
+export type SeedReview = { id: string; who: string; rating: number; text: string; date: string };
+export const REVIEWS: SeedReview[] = [
+  { id: 'r1', who: 'Customer A', rating: 5, text: 'Very professional and on time. My back feels much better after three sessions.', date: '2026-10-28' },
+  { id: 'r2', who: 'Customer B', rating: 5, text: 'Clear plan and great communication.', date: '2026-10-19' },
+  { id: 'r3', who: 'Customer C', rating: 4, text: 'Good session, would book again.', date: '2026-10-02' },
 ];
+// Reply already written for the first review (sample).
+export const SEED_REPLIES: Record<string, string> = { r1: 'Thank you, it was a pleasure working with you.' };
+
+
+// Sample photos and videos on other professionals' pages. Some professionals add none, which is fine.
+export type SeedMedia = { id: string; kind: 'photo' | 'video'; art: { emoji: string; bg: string }; caption: string };
+export const PRO_MEDIA: Record<string, SeedMedia[]> = {
+  p2: [
+    { id: 'p2a', kind: 'photo', art: { emoji: '🏋️', bg: '#FFE3D8' }, caption: 'Strength session' },
+    { id: 'p2b', kind: 'video', art: { emoji: '🎬', bg: '#EFE6FA' }, caption: 'A full-body warm-up you can do at home' },
+    { id: 'p2c', kind: 'photo', art: { emoji: '🤸', bg: '#DDF3E6' }, caption: 'Mobility class' },
+  ],
+  p4: [
+    { id: 'p4a', kind: 'photo', art: { emoji: '🥗', bg: '#DDF3E6' }, caption: 'Nutrition and training go together' },
+    { id: 'p4b', kind: 'photo', art: { emoji: '🏃‍♀️', bg: '#FFF1CC' }, caption: 'Morning run with clients' },
+  ],
+  p5: [{ id: 'p5a', kind: 'video', art: { emoji: '🧘‍♀️', bg: '#DCEEFB' }, caption: 'Gentle shoulder rehab exercises' }],
+  p6: [
+    { id: 'p6a', kind: 'photo', art: { emoji: '⚽', bg: '#DDF3E6' }, caption: 'Athletic performance testing' },
+    { id: 'p6b', kind: 'photo', art: { emoji: '🏅', bg: '#FFF1CC' }, caption: 'Race day with the team' },
+  ],
+};

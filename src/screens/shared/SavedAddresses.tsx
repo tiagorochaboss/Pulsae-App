@@ -13,7 +13,7 @@ export function SavedAddresses({ navigation }: any) {
     <Screen title={role === 'customer' ? 'Saved addresses' : 'Saved places'} onBack={() => navigation.goBack()} footer={<Btn label="Add new" onPress={() => navigation.navigate('AddAddress')} />}>
       {list.length === 0 ? <Empty icon="map-pin" title="Nothing saved yet" sub="Save your home or gym to book faster." /> : null}
       {list.map((a) => (
-        <Card key={a.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Card key={a.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <Icon name={a.label === 'Home' ? 'home' : a.label === 'Gym' ? 'activity' : 'map-pin'} color={colors.coralDark} />
           <View style={{ flex: 1, gap: 2 }}>
             <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
@@ -23,6 +23,9 @@ export function SavedAddresses({ navigation }: any) {
             <Text style={styles.cap}>{a.line}</Text>
             {a.notes ? <Text style={styles.cap}>{a.notes}</Text> : null}
           </View>
+          <Pressable accessibilityLabel="Edit" hitSlop={8} onPress={() => navigation.navigate('AddAddress', { id: a.id })}>
+            <Icon name="edit-2" size={18} color={colors.coralDark} />
+          </Pressable>
           <Pressable accessibilityLabel="Remove" hitSlop={8} onPress={() => api.removeAddress(role, a.id)}>
             <Icon name="trash-2" size={18} color={colors.gray} />
           </Pressable>
@@ -32,22 +35,31 @@ export function SavedAddresses({ navigation }: any) {
   );
 }
 
-export function AddAddress({ navigation }: any) {
-  const { api } = useStore();
+export function AddAddress({ navigation, route }: any) {
+  const { s, api } = useStore();
   const { role } = useApp();
-  const [label, setLabel] = useState(role === 'customer' ? 'Home' : 'My clinic');
-  const [line, setLine] = useState('');
-  const [notes, setNotes] = useState('');
-  const [def, setDef] = useState(false);
-  const labels = role === 'customer' ? ['Home', 'Work', 'Gym'] : ['My clinic', 'Gym', 'Other'];
+  const editId: string | undefined = route && route.params ? route.params.id : undefined;
+  const existing = editId ? s.addresses[role].find((x) => x.id === editId) : undefined;
+  const [label, setLabel] = useState(existing ? existing.label : role === 'customer' ? 'Home' : 'My clinic');
+  const [line, setLine] = useState(existing ? existing.line : '');
+  const [notes, setNotes] = useState(existing ? existing.notes : '');
+  const [def, setDef] = useState(existing ? existing.isDefault : false);
+  const base = role === 'customer' ? ['Home', 'Work', 'Gym'] : ['My clinic', 'Gym', 'Other'];
+  const labels = base.includes(label) ? base : [...base, label];
+  const save = () => {
+    const v = { label, line: line.trim(), notes: notes.trim(), isDefault: def };
+    if (existing) api.updateAddress(role, existing.id, v);
+    else api.addAddress(role, v);
+    navigation.goBack();
+  };
   return (
-    <Screen title="New address" onBack={() => navigation.goBack()} footer={<Btn label="Save address" disabled={!line.trim()} onPress={() => { api.addAddress(role, { label, line: line.trim(), notes: notes.trim(), isDefault: def }); navigation.goBack(); }} />}>
+    <Screen title={existing ? 'Edit address' : 'New address'} onBack={() => navigation.goBack()} footer={<Btn label={existing ? 'Save changes' : 'Save address'} disabled={!line.trim()} onPress={save} />}>
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
         {labels.map((l) => <Chip key={l} label={l} on={label === l} onPress={() => setLabel(l)} />)}
       </View>
       <Field label="Street and district" value={line} onChangeText={setLine} placeholder="Street, district, Riyadh" />
       <Field label="Building, gate or notes" value={notes} onChangeText={setNotes} />
-      <Check on={def} onPress={() => setDef(!def)} label="Make this my default" />
+      {existing && existing.isDefault ? <Tag label="This is your default address" tone="outline" /> : <Check on={def} onPress={() => setDef(!def)} label="Make this my default" />}
     </Screen>
   );
 }

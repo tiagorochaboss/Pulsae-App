@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { colors, fonts } from '../../theme';
+import { AddressCard } from '../../components/Maps';
 import { Btn, Card, Chip, Divider, Field, Line, Notice, Panel, Screen, Tag, Text, useToast } from '../../components/ui';
 import { useStore } from '../../store';
 import { useI18n } from '../../i18n';
@@ -8,7 +9,7 @@ import { fmtDate, fmtTime, money } from '../../lib';
 
 export default function ProBookingDetail({ navigation, route }: any) {
   const { s, api } = useStore();
-  const { lang } = useI18n();
+  const { lang, tf } = useI18n();
   const toast = useToast();
   const [panel, setPanel] = useState<'' | 'cancel' | 'report'>('');
   const [cat, setCat] = useState('');
@@ -32,16 +33,18 @@ export default function ProBookingDetail({ navigation, route }: any) {
           </View>
           <Divider />
           <Line label="Customer" value={b.customer} />
-          <Line label="Where" value={b.where} />
+          {b.packId ? <Line label="Booking type" value={tf('Prepaid session {n} of {t}', { n: b.packNo || 1, t: (s.packs.find((x) => x.id === b.packId) || { total: 0 }).total })} /> : null}
           <Line label="Session price" value={money(b.price)} />
           {b.payoutDate ? <Line label="Payout date" value={fmtDate(b.payoutDate, lang)} accent /> : null}
         </Card>
+
+        {b.status !== 'cancelled' ? <AddressCard title="Where to go" address={b.where} notes={b.notes} hint="Tap the button to open the exact location in Google Maps." /> : null}
 
         {b.status === 'confirmed' ? (
           <View style={{ gap: 10 }}>
             <Btn label="Message customer" kind="outline" onPress={() => navigation.navigate('Chat', { bookingId: b.id })} />
             <Btn label="Mark as completed" onPress={() => { api.markComplete(b.id); toast.show('Marked complete. The customer was asked to confirm.'); }} />
-            <Btn label="Cancel session" kind="danger" onPress={() => setPanel(panel === 'cancel' ? '' : 'cancel')} />
+            {b.packId ? <Notice icon="gift" text="This session is part of a prepaid pack. It is already paid and cannot be declined. If you cannot make it, message the customer to agree another time, or contact us." /> : <Btn label="Cancel session" kind="danger" onPress={() => setPanel(panel === 'cancel' ? '' : 'cancel')} />}
           </View>
         ) : null}
         {b.status === 'awaiting' ? <Notice icon="clock" text="Waiting for the customer to confirm. If they do not respond within 24 hours the session is confirmed automatically. You are paid 48 hours after confirmation." /> : null}

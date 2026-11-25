@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Share, View } from 'react-native';
+import { Pressable, Share, View } from 'react-native';
+import { MyAvatar } from '../../components/MyAvatar';
 import { colors, fonts } from '../../theme';
 import { Avatar, Btn, BellButton, Card, Divider, Empty, Field, Icon, Line, Notice, RowItem, Screen, Tag, Text, Toggle, useToast } from '../../components/ui';
 import { useStore } from '../../store';
 import { PROS } from '../../data';
+import { fmtShort } from '../../lib';
 import { useApp } from '../../role';
 import { useI18n } from '../../i18n';
 import { fmtDate, money } from '../../lib';
@@ -14,22 +16,25 @@ export default function Profile({ navigation }: any) {
   const { lang, setLang, tf } = useI18n();
   const unread = s.notifs.customer.filter((n) => n.unread).length;
   return (
-    <Screen title="Profile" right={<BellButton count={unread} onPress={() => navigation.navigate('Notifications')} />}>
+    <Screen title="Settings" right={<BellButton count={unread} onPress={() => navigation.navigate('Notifications')} />}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-        <Avatar size={64} />
+        <Pressable onPress={() => navigation.navigate('ProfilePhoto')}><MyAvatar role="customer" size={64} /></Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: fonts.semibold, fontSize: 18, color: colors.ink }}>{s.customerName}</Text>
+          <Text style={{ fontFamily: fonts.semibold, fontSize: 18, color: colors.ink }}>{s.account.customer.first + ' ' + s.account.customer.last}</Text>
           <Text style={{ fontFamily: fonts.regular, fontSize: 13, color: colors.gray }}>Riyadh</Text>
         </View>
       </View>
       <View>
-        <RowItem icon="user" title="Personal details" onPress={() => navigation.navigate('PersonalDetails')} />
+        <RowItem icon="user" title="Personal details" sub="Name, mobile, email, password" onPress={() => navigation.navigate('PersonalDetails')} />
+        <RowItem icon="lock" title="Login and security" sub="Remember me, Face ID, password" onPress={() => navigation.navigate('Security')} />
         <RowItem icon="map-pin" title="Saved addresses" sub={tf('{n} saved', { n: s.addresses.customer.length })} onPress={() => navigation.navigate('SavedAddresses')} />
-        <RowItem icon="credit-card" title="Payment methods" onPress={() => navigation.navigate('PaymentMethods')} />
-        <RowItem icon="gift" title="Credits and referrals" sub={money(s.credits.reduce((a, c) => a + c.amount, 0))} onPress={() => navigation.navigate('Credits')} />
+        <RowItem icon="credit-card" title="Payment methods" sub={tf('{n} saved', { n: s.cards.length })} onPress={() => navigation.navigate('PaymentMethods')} />
+        <RowItem icon="gift" title="My prepaid sessions" sub={tf('{n} left', { n: s.packs.reduce((a, p) => a + (p.total - p.used), 0) })} onPress={() => navigation.navigate('Prepaid')} />
+        <RowItem icon="tag" title="Credits and referrals" sub={money(s.credits.reduce((a, c) => a + c.amount, 0))} onPress={() => navigation.navigate('Credits')} />
         <RowItem icon="heart" title="Saved professionals" sub={tf('{n} saved', { n: s.favorites.length })} onPress={() => navigation.navigate('Saved')} />
         <RowItem icon="bell" title="Notification settings" onPress={() => navigation.navigate('NotifSettings')} />
-        <RowItem icon="globe" title="Language" sub={lang === 'en' ? 'English' : 'العربية'} onPress={() => setLang(lang === 'en' ? 'ar' : 'en')} />
+        <RowItem icon="globe" title="Language" sub={lang === 'en' ? 'English' : 'العربية'} onPress={() => navigation.navigate('Language')} />
+        <RowItem icon="file-text" title="Legal" sub="Terms and privacy" onPress={() => navigation.navigate('Legal')} />
         <RowItem icon="help-circle" title="Help centre" onPress={() => navigation.navigate('Help')} />
         <RowItem icon="message-square" title="Contact us" onPress={() => navigation.navigate('ContactUs')} />
       </View>
@@ -38,48 +43,6 @@ export default function Profile({ navigation }: any) {
       <Btn label="See the professional app" kind="outline" onPress={() => switchRole('pro')} />
       <Btn label="Reset demo data" kind="outline" onPress={() => api.resetDemo()} />
       <Btn label="Log out" kind="danger" onPress={logout} />
-    </Screen>
-  );
-}
-
-export function PersonalDetails({ navigation }: any) {
-  const { s, api } = useStore();
-  const [name, setName] = useState(s.customerName);
-  const toast = useToast();
-  return (
-    <View style={{ flex: 1 }}>
-      <Screen title="Personal details" onBack={() => navigation.goBack()} footer={<Btn label="Save" disabled={!name.trim()} onPress={() => { api.setCustomerName(name.trim()); toast.show('Saved'); }} />}>
-        <Field label="Full name" value={name} onChangeText={setName} />
-        <Card style={{ gap: 10 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 14, color: colors.gray }}>Mobile</Text>
-            <Tag label="Verified" tone="outline" />
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 14, color: colors.gray }}>Email</Text>
-            <Tag label="Verified" tone="outline" />
-          </View>
-        </Card>
-        <Notice text="To change your gender, mobile number or email, contact us so we can verify the change." />
-      </Screen>
-      {toast.node}
-    </View>
-  );
-}
-
-export function PaymentMethods({ navigation }: any) {
-  const { tf } = useI18n();
-  const [cards, setCards] = useState([4242]);
-  return (
-    <Screen title="Payment methods" onBack={() => navigation.goBack()} footer={<Btn label="Add a card (demo)" onPress={() => setCards([...cards, 1000 + cards.length * 111])} />}>
-      {cards.map((c, i) => (
-        <Card key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Icon name="credit-card" color={colors.coralDark} />
-          <Text style={{ flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.ink }}>{tf('Card ending {n}', { n: c })}</Text>
-          {i === 0 ? <Tag label="Default" /> : null}
-        </Card>
-      ))}
-      <Notice icon="lock" text="Prototype: cards are placeholders. A secure payment provider will handle real card details." />
     </Screen>
   );
 }
@@ -115,29 +78,6 @@ export function Credits({ navigation }: any) {
   );
 }
 
-export function NotifSettings({ navigation }: any) {
-  const [v, setV] = useState({ bookings: true, messages: true, offers: false, community: true });
-  const rows: [keyof typeof v, string, string][] = [
-    ['bookings', 'Bookings and reminders', 'Confirmations, changes and reminders'],
-    ['messages', 'Messages', 'New messages from your professional'],
-    ['offers', 'Offers', 'Promotions and credits'],
-    ['community', 'Community', 'Events and posts'],
-  ];
-  return (
-    <Screen title="Notification settings" onBack={() => navigation.goBack()}>
-      {rows.map(([k, t, sub]) => (
-        <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.ink }}>{t}</Text>
-            <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.gray }}>{sub}</Text>
-          </View>
-          <Toggle on={v[k]} onChange={(x) => setV({ ...v, [k]: x })} />
-        </View>
-      ))}
-    </Screen>
-  );
-}
-
 export function SavedPros({ navigation }: any) {
   const { s } = useStore();
   const list = PROS.filter((p) => s.favorites.includes(p.id));
@@ -147,6 +87,37 @@ export function SavedPros({ navigation }: any) {
       {list.map((p) => (
         <RowItem key={p.id} icon="user" title={p.name} sub={p.role} onPress={() => navigation.navigate('ProDetail', { id: p.id })} />
       ))}
+    </Screen>
+  );
+}
+
+export function Prepaid({ navigation }: any) {
+  const { s } = useStore();
+  const { lang, tf } = useI18n();
+  return (
+    <Screen title="My prepaid sessions" onBack={() => navigation.goBack()}>
+      <Notice icon="gift" text="Sessions you paid for in advance. They are used with the same professional, whenever you want. Book each one when you are ready." />
+      {s.packs.length === 0 ? <Empty icon="gift" title="No prepaid sessions" sub="Buy 4 or 8 sessions with a professional at checkout and save." /> : null}
+      {s.packs.map((pk) => {
+        const pro = PROS.find((p) => p.id === pk.proId);
+        const left = pk.total - pk.used;
+        const mine = s.bookings.filter((b) => b.packId === pk.id && b.status !== 'cancelled').sort((a, b) => (a.packNo || 0) - (b.packNo || 0));
+        return (
+          <Card key={pk.id} style={{ gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ flex: 1, fontFamily: fonts.semibold, fontSize: 15, color: colors.ink }}>{pro ? pro.name : ''}</Text>
+              <Tag label={tf('{n} of {t} left', { n: left, t: pk.total })} tone={left > 0 ? 'outline' : 'gray'} />
+            </View>
+            <Line label="Bought on" value={fmtDate(pk.boughtOn, lang)} />
+            <Line label="Price per session" value={money(pk.unit)} />
+            {pk.discountPct ? <Line label="Discount" value={tf('{p}% off', { p: pk.discountPct })} accent /> : null}
+            {mine.map((b) => (
+              <Line key={b.id} label={tf('Session {n}', { n: b.packNo || 1 })} value={fmtShort(b.date, lang)} />
+            ))}
+            {left > 0 ? <Btn label="Book next session" kind="smallPrimary" onPress={() => navigation.navigate('ChooseTime', { id: pk.proId, packId: pk.id })} /> : null}
+          </Card>
+        );
+      })}
     </Screen>
   );
 }

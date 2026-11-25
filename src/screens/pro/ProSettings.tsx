@@ -7,20 +7,17 @@ import { useApp } from '../../role';
 import { useI18n } from '../../i18n';
 
 export default function ProSettings({ navigation }: any) {
-  const { s, api } = useStore();
+  const { api } = useStore();
   const { switchRole, logout } = useApp();
-  const { lang, setLang, tf } = useI18n();
+  const { lang } = useI18n();
   return (
     <Screen title="Settings">
       <View>
-        <RowItem icon="clock" title="Availability" onPress={() => navigation.navigate('Availability')} />
-        <RowItem icon="map" title="Service area" onPress={() => navigation.navigate('ServiceArea')} />
-        <RowItem icon="map-pin" title="Saved places" sub={tf('{n} saved', { n: s.addresses.pro.length })} onPress={() => navigation.navigate('SavedAddresses')} />
-        <RowItem icon="credit-card" title="Earnings" onPress={() => navigation.navigate('Earnings')} />
-        <RowItem icon="briefcase" title="Bank account" onPress={() => navigation.navigate('Bank')} />
-        <RowItem icon="file-text" title="Credentials and documents" onPress={() => navigation.navigate('Docs')} />
+        <RowItem icon="user" title="Personal details" sub="Name, mobile, email, password" onPress={() => navigation.navigate('PersonalDetails')} />
+        <RowItem icon="lock" title="Login and security" sub="Remember me, Face ID, password" onPress={() => navigation.navigate('Security')} />
         <RowItem icon="bell" title="Notification settings" onPress={() => navigation.navigate('NotifSettings')} />
-        <RowItem icon="globe" title="Language" sub={lang === 'en' ? 'English' : 'العربية'} onPress={() => setLang(lang === 'en' ? 'ar' : 'en')} />
+        <RowItem icon="globe" title="Language" sub={lang === 'en' ? 'English' : 'العربية'} onPress={() => navigation.navigate('Language')} />
+        <RowItem icon="shield" title="Legal and Professional Terms" onPress={() => navigation.navigate('Legal')} />
         <RowItem icon="help-circle" title="Help centre" onPress={() => navigation.navigate('Help')} />
         <RowItem icon="message-square" title="Contact us" onPress={() => navigation.navigate('ContactUs')} />
       </View>
@@ -50,20 +47,5 @@ export function Bank({ navigation }: any) {
       </Screen>
       {toast.node}
     </View>
-  );
-}
-
-export function Docs({ navigation }: any) {
-  const docs = [['Professional licence', 'Verified'], ['National ID or Iqama', 'Verified'], ['Certificates', 'Verified']];
-  return (
-    <Screen title="Credentials and documents" onBack={() => navigation.goBack()}>
-      {docs.map(([d, st]) => (
-        <Card key={d} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={{ flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.ink }}>{d}</Text>
-          <Tag label={st} tone="outline" />
-        </Card>
-      ))}
-      <Notice text="To update a document, contact us and we will review the new file." />
-    </Screen>
   );
 }

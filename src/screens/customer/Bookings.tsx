@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { colors, fonts } from '../../theme';
-import { BellButton, Card, Chip, Empty, Icon, Screen, Tag, Text, styles, Notice } from '../../components/ui';
+import { BellButton, MessagesButton, Btn, Card, Chip, Empty, Icon, Screen, Section, Tag, Text, styles, Notice } from '../../components/ui';
 import { PROS } from '../../data';
-import { Booking, nextCharge, useStore } from '../../store';
+import { Booking, nextCharge, unreadChats, useStore } from '../../store';
 import { useI18n } from '../../i18n';
 import { fmtDate, fmtShort, fmtTime, money, startOf } from '../../lib';
 
@@ -27,6 +27,7 @@ export default function Bookings({ navigation }: any) {
   const past = s.bookings.filter((b) => b.status === 'completed' || b.status === 'cancelled').sort((a, b) => byTime(b, a));
   const events = s.posts.filter((p) => p.event && s.going.includes(p.id));
   const activeSeries = s.series.filter((x) => x.status === 'active');
+  const packsLeft = s.packs.filter((p) => p.used < p.total);
   const stoppedSeries = s.series.filter((x) => x.status === 'stopped');
 
   const card = (b: Booking) => {
@@ -41,7 +42,7 @@ export default function Bookings({ navigation }: any) {
           <Text style={styles.cap}>{(pro ? pro.name : '') + ' · ' + b.where}</Text>
           <View style={{ flexDirection: 'row', gap: 6 }}>
             {b.kind === 'series' ? <Tag label="Weekly" /> : null}
-            {b.kind === 'pack' ? <Tag label="Pack" /> : null}
+            {b.kind === 'pack' ? <Tag label={tf('Prepaid {n} of {t}', { n: b.packNo || 1, t: (s.packs.find((x) => x.id === b.packId) || { total: 0 }).total })} /> : null}
           </View>
         </Card>
       </Pressable>
@@ -49,7 +50,7 @@ export default function Bookings({ navigation }: any) {
   };
 
   return (
-    <Screen title="Bookings" right={<BellButton count={unread} onPress={() => navigation.navigate('Notifications')} />}>
+    <Screen title="Bookings" right={<View style={{ flexDirection: 'row', gap: 8 }}><MessagesButton count={unreadChats(s, 'customer')} onPress={() => navigation.navigate('Inbox')} /><BellButton count={unread} onPress={() => navigation.navigate('Notifications')} /></View>}>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Chip label="Upcoming" on={tab === 'Upcoming'} onPress={() => setTab('Upcoming')} />
         <Chip label="Past" on={tab === 'Past'} onPress={() => setTab('Past')} />
@@ -62,6 +63,20 @@ export default function Bookings({ navigation }: any) {
 
       {tab === 'Upcoming' ? (
         <>
+          {packsLeft.map((pk) => {
+            const pro = PROS.find((p) => p.id === pk.proId);
+            const left = pk.total - pk.used;
+            return (
+              <Card key={pk.id} style={{ gap: 10, borderColor: colors.coral, backgroundColor: colors.pale }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Icon name="gift" size={18} color={colors.coralDark} />
+                  <Text style={{ flex: 1, fontFamily: fonts.semibold, fontSize: 15, color: colors.coralDarkest }}>{tf('{n} prepaid sessions left with {p}', { n: left, p: pro ? pro.name : '' })}</Text>
+                </View>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 19, color: colors.coralDark }}>Already paid. Book each one whenever you want, no need to fix the dates now.</Text>
+                <Btn label="Book next session" kind="smallPrimary" onPress={() => navigation.navigate('ChooseTime', { id: pk.proId, packId: pk.id })} />
+              </Card>
+            );
+          })}
           {activeSeries.map((x) => {
             const nc = nextCharge(s, x.id);
             const pro = PROS.find((p) => p.id === x.proId);

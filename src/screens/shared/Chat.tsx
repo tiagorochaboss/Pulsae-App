@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { colors, fonts } from '../../theme';
 import { Icon, Screen, Text } from '../../components/ui';
@@ -19,6 +19,11 @@ export default function Chat({ navigation, route }: any) {
   const msgs = s.chats[route.params.bookingId] || [];
   const other = role === 'customer' ? pro.name : b ? b.customer : 'Customer';
 
+  // Opening a conversation (or receiving a message while it is open) marks it as read.
+  useEffect(() => {
+    api.markChatRead(role, route.params.bookingId);
+  }, [msgs.length]);
+
   const send = () => {
     if (!text.trim() || !b) return;
     api.send(b.id, role, text.trim());
@@ -27,7 +32,7 @@ export default function Chat({ navigation, route }: any) {
   };
 
   return (
-    <Screen title={other} onBack={() => navigation.goBack()} scroll={false}>
+    <Screen title={other} onBack={() => navigation.goBack()} scroll={false} right={b ? <Pressable onPress={() => navigation.navigate(role === 'pro' ? 'ProBookingDetail' : 'BookingDetail', { id: b.id })}><Text style={{ fontFamily: fonts.medium, fontSize: 13, color: colors.coralDark }}>View booking</Text></Pressable> : undefined}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView ref={ref} contentContainerStyle={{ padding: 20, gap: 10 }} onContentSizeChange={() => ref.current && ref.current.scrollToEnd({ animated: false })}>
           {b ? <Text style={{ textAlign: 'center', fontFamily: fonts.regular, fontSize: 12, color: colors.gray }}>{fmtShort(b.date, lang) + ' · ' + fmtTime(b.time, lang)}</Text> : null}

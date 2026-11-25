@@ -32,26 +32,51 @@ export function Credentials({ onBack, onContinue }: { onBack: () => void; onCont
   );
 }
 
+const p13 = { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 19, color: colors.gray };
+
+// The key terms, written to be clear and friendly. Used at sign-up and in Legal.
+export function ProTermsContent() {
+  return (
+    <>
+      <Card style={{ gap: 10 }}>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.ink }}>How earnings work</Text>
+        <Line label="Commission, first booking with a customer" value="25%" />
+        <Line label="Commission, repeat bookings in the first 2 months" value="0%" />
+        <Line label="Payment processing fee (up to)" value="5%" />
+        <Divider />
+        <Text style={p13}>The 25% is a one-time fee for bringing you a new customer. If the same customer keeps booking with you, there is no commission within 2 months of their last session. If they return after more than 2 months, the 25% applies again, as Pulsae has helped bring them back to you.</Text>
+        <Text style={p13}>You are paid 48 hours after the customer confirms the session (or after the 24-hour automatic confirmation).</Text>
+      </Card>
+
+      <Card style={{ gap: 8 }}>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.ink }}>Offers for customers</Text>
+        <Text style={p13}>Today, customers can buy prepaid packs of 4 sessions (5% off) and 8 sessions (10% off). These offers help bring you more regular customers. When a customer books with an offer, the discount is covered from your session price, and you can always see the exact amount in Earnings.</Text>
+        <Text style={p13}>Over time we may introduce other offers, such as new pack sizes, seasonal promotions or welcome offers. By joining Pulsae you agree to support the offers we run, and we will keep them reasonable and tell you about each new one in the app.</Text>
+        <Text style={p13}>Prepaid sessions are already paid by the customer, so they are always honoured. Weekly repeat bookings are different: you choose whether to offer them.</Text>
+      </Card>
+
+      <Card style={{ gap: 8 }}>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.ink }}>Growing together</Text>
+        <Text style={p13}>Pulsae is new and will keep improving. As we grow, our fees, offers and features may be adjusted, and we may add new services. If we make a change, we will tell you in the app before it starts. It applies to future bookings only, and bookings already made stay as agreed. You can pause or stop offering sessions at any time.</Text>
+      </Card>
+
+      <Card style={{ gap: 6 }}>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.ink }}>Cancellations</Text>
+        <Text style={p13}>If you cancel or cannot attend, the customer is refunded in full and your account is flagged, so please tell the customer as early as you can. Customers who cancel with more than 24 hours notice receive a rebooking credit. Within 24 hours the session is paid to you.</Text>
+      </Card>
+    </>
+  );
+}
+
 export function Terms({ onBack, onContinue }: { onBack: () => void; onContinue: () => void }) {
   const [a, setA] = useState(false);
   const [b, setB] = useState(false);
   const [c, setC] = useState(false);
   return (
     <Screen title="Professional terms" onBack={onBack} footer={<Btn label="Accept and continue" onPress={onContinue} disabled={!(a && b && c)} />}>
-      <Card style={{ gap: 10 }}>
-        <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.ink }}>How earnings work</Text>
-        <Line label="Commission, first booking with a customer" value="25%" />
-        <Line label="Commission, repeat bookings in the first 2 months" value="0%" />
-        <Line label="Payment processing fee" value="5%" />
-        <Divider />
-        <Text style={{ fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 19, color: colors.gray }}>You are paid 48 hours after the customer confirms the session (or after the 24-hour automatic confirmation).</Text>
-      </Card>
-      <Card style={{ gap: 6 }}>
-        <Text style={{ fontFamily: fonts.medium, fontSize: 15, color: colors.ink }}>Cancellations</Text>
-        <Text style={{ fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 19, color: colors.gray }}>If you cancel or do not attend, the customer is refunded in full and your account is flagged. Customers who cancel with more than 24 hours notice receive a rebooking credit. Within 24 hours the session is paid to you.</Text>
-      </Card>
-      <Check on={a} onPress={() => setA(!a)} label="I have read and accept the Professional Terms and Conditions." />
-      <Check on={b} onPress={() => setB(!b)} label="I understand that discounts I offer on packs of sessions are funded by me and reduce my payout accordingly." />
+      <ProTermsContent />
+      <Check on={a} onPress={() => setA(!a)} label="I have read and accept the Professional Terms and Conditions, including that fees and offers may be updated in the future with notice." />
+      <Check on={b} onPress={() => setB(!b)} label="I understand that discounts on prepaid sessions and other offers run by Pulsae are covered from my session price, and I will support them." />
       <Check on={c} onPress={() => setC(!c)} label="I confirm my credentials are true and I will keep them valid." />
     </Screen>
   );

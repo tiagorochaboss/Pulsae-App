@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { colors, fonts } from '../../theme';
-import { Btn, Check, Chip, Field, Screen, Text } from '../../components/ui';
+import { Btn, Check, Chip, Field, PasswordField, Screen, Text } from '../../components/ui';
+import { PhoneField, cleanNumber, emailError, fullPhone, phoneError } from '../../components/Phone';
 import { Role } from '../../store';
 
-export type SignupData = { first: string; last: string; gender: string; mobile: string; email: string; profession: string };
+export type SignupData = { first: string; last: string; gender: string; mobile: string; email: string; profession: string; iso: string; phone: string };
 
 export default function Signup({ role, onBack, onContinue }: { role: Role; onBack: () => void; onContinue: (d: SignupData) => void }) {
   const [first, setFirst] = useState('');
   const [last, setLast] = useState('');
   const [gender, setGender] = useState('');
+  const [iso, setIso] = useState('SA');
   const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
@@ -22,8 +24,8 @@ export default function Signup({ role, onBack, onContinue }: { role: Role; onBac
   if (!first.trim()) errors.first = 'Required';
   if (!last.trim()) errors.last = 'Required';
   if (!gender) errors.gender = 'Please choose one';
-  if (!/^\+?[0-9 ]{9,15}$/.test(mobile.trim())) errors.mobile = 'Enter a valid mobile number';
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) errors.email = 'Enter a valid email';
+  if (phoneError(iso, mobile)) errors.mobile = phoneError(iso, mobile);
+  if (emailError(email)) errors.email = emailError(email);
   if (pw.length < 8) errors.pw = 'At least 8 characters';
   if (pw2 !== pw) errors.pw2 = 'Passwords do not match';
   if (!agree) errors.agree = 'Please accept to continue';
@@ -31,7 +33,7 @@ export default function Signup({ role, onBack, onContinue }: { role: Role; onBac
 
   const go = () => {
     setTried(true);
-    if (ok) onContinue({ first, last, gender, mobile, email, profession });
+    if (ok) onContinue({ first, last, gender, mobile: fullPhone(iso, mobile), email: email.trim(), profession, iso, phone: cleanNumber(mobile) });
   };
   const e = (k: string) => (tried ? errors[k] : undefined);
 
@@ -58,10 +60,10 @@ export default function Signup({ role, onBack, onContinue }: { role: Role; onBac
           </View>
         </View>
       ) : null}
-      <Field label="Mobile number" value={mobile} onChangeText={setMobile} keyboardType="phone-pad" placeholder="+966 5X XXX XXXX" error={e('mobile')} />
+      <PhoneField iso={iso} number={mobile} onChange={(i, n) => { setIso(i); setMobile(n); }} error={e('mobile')} />
       <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" error={e('email')} />
-      <Field label="Create a password" value={pw} onChangeText={setPw} secureTextEntry autoCapitalize="none" error={e('pw')} />
-      <Field label="Confirm password" value={pw2} onChangeText={setPw2} secureTextEntry autoCapitalize="none" error={e('pw2')} />
+      <PasswordField label="Create a password" value={pw} onChangeText={setPw} error={e('pw')} />
+      <PasswordField label="Confirm password" value={pw2} onChangeText={setPw2} error={e('pw2')} />
       <Check on={agree} onPress={() => setAgree(!agree)} label="I agree to the Terms of Use and the Privacy Policy. I understand Pulsae will verify my mobile number and email." />
       {e('agree') ? <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.coralDark }}>{errors.agree}</Text> : null}
     </Screen>

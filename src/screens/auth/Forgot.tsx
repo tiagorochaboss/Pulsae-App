@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { colors, fonts } from '../../theme';
-import { Btn, Field, Notice, Screen, Text } from '../../components/ui';
+import { Btn, Field, Notice, PasswordField, Screen, Segmented, Text } from '../../components/ui';
+import { PhoneField, emailError, fullPhone, phoneError } from '../../components/Phone';
 import { useI18n } from '../../i18n';
 
 // Forgot password: contact -> code -> new password. Simulated; the code is 123456.
 export default function Forgot({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
   const { tf } = useI18n();
   const [step, setStep] = useState(1);
-  const [contact, setContact] = useState('');
+  const [mode, setMode] = useState<'mobile' | 'email'>('mobile');
+  const [iso, setIso] = useState('SA');
+  const [num, setNum] = useState('');
+  const [email, setEmail] = useState('');
+  const contact = mode === 'mobile' ? fullPhone(iso, num) : email.trim();
   const [code, setCode] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
@@ -15,7 +20,8 @@ export default function Forgot({ onBack, onDone }: { onBack: () => void; onDone:
 
   const next = () => {
     if (step === 1) {
-      if (contact.trim().length < 5) return setErr('Enter your verified mobile number or email.');
+      const bad = mode === 'mobile' ? phoneError(iso, num) : emailError(email);
+      if (bad) return setErr(bad);
       setErr('');
       setStep(2);
     } else if (step === 2) {
@@ -42,7 +48,8 @@ export default function Forgot({ onBack, onDone }: { onBack: () => void; onDone:
       {step === 1 ? (
         <>
           <Text style={{ fontFamily: fonts.regular, fontSize: 14, lineHeight: 21, color: colors.gray }}>We will send a code to your verified mobile number or email.</Text>
-          <Field label="Mobile number or email" value={contact} onChangeText={setContact} autoCapitalize="none" error={err} />
+          <Segmented value={mode} onChange={(k) => setMode(k as any)} options={[{ key: 'mobile', label: 'Mobile number' }, { key: 'email', label: 'Email' }]} />
+          {mode === 'mobile' ? <PhoneField iso={iso} number={num} onChange={(i, n) => { setIso(i); setNum(n); }} error={err} /> : <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" error={err} />}
         </>
       ) : null}
       {step === 2 ? (
@@ -54,8 +61,8 @@ export default function Forgot({ onBack, onDone }: { onBack: () => void; onDone:
       ) : null}
       {step === 3 ? (
         <>
-          <Field label="New password" value={pw} onChangeText={setPw} secureTextEntry autoCapitalize="none" />
-          <Field label="Confirm new password" value={pw2} onChangeText={setPw2} secureTextEntry autoCapitalize="none" error={err} />
+          <PasswordField label="New password" value={pw} onChangeText={setPw} />
+          <PasswordField label="Confirm new password" value={pw2} onChangeText={setPw2} error={err} />
         </>
       ) : null}
     </Screen>

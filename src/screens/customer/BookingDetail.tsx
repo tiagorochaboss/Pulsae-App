@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { colors, fonts } from '../../theme';
-import { Btn, Card, Chip, Divider, Field, Icon, Line, Notice, Panel, Screen, Section, Text, useToast } from '../../components/ui';
+import { AddressCard } from '../../components/Maps';
+import { Btn, Card, Chip, Divider, Field, Icon, Line, Notice, Panel, Screen, Section, Tag, Text, styles, useToast } from '../../components/ui';
 import { PROS } from '../../data';
 import { slotsFor, useStore } from '../../store';
 import { useI18n } from '../../i18n';
@@ -19,6 +20,9 @@ export default function BookingDetail({ navigation, route }: any) {
   const [cat, setCat] = useState('');
   const [details, setDetails] = useState('');
   const [stars, setStars] = useState(0);
+  const [rtext, setRtext] = useState('');
+  const [rtags, setRtags] = useState<string[]>([]);
+  const myReview = s.reviews.find((r) => r.bookingId === route.params.id);
 
   if (!b) {
     return (
@@ -37,7 +41,7 @@ export default function BookingDetail({ navigation, route }: any) {
   const doCancel = () => {
     const r = api.cancelBooking(b.id, 'customer');
     setPanel('');
-    toast.show(r.type === 'credit' ? tf('Cancelled. {a} added as a rebooking credit.', { a: money(r.amount) }) : r.type === 'charged' ? 'Cancelled. This session is charged in full.' : 'Cancelled.');
+    toast.show(r.type === 'pack' ? 'Cancelled. The session is back in your prepaid balance.' : r.type === 'credit' ? tf('Cancelled. {a} added as a rebooking credit.', { a: money(r.amount) }) : r.type === 'charged' ? 'Cancelled. This session is charged in full.' : 'Cancelled.');
   };
 
   return (
@@ -50,12 +54,20 @@ export default function BookingDetail({ navigation, route }: any) {
           </View>
           <Divider />
           <Line label="Professional" value={pro.name} />
-          <Line label="Where" value={b.where} />
           <Line label="Price" value={money(b.price)} />
           {b.status === 'cancelled' ? <Line label="Cancelled by" value={b.cancelledBy === 'pro' ? 'Professional' : b.cancelledBy === 'series' ? 'Series stopped' : 'You'} /> : null}
           {b.refund ? <Line label="Refund" value={b.refund} accent /> : null}
           {b.payoutDate ? <Line label="Professional paid on" value={fmtDate(b.payoutDate, lang)} /> : null}
         </Card>
+
+        {b.status !== 'cancelled' ? <AddressCard address={b.where} notes={b.notes} /> : <Line label="Where" value={b.where} />}
+
+        {b.packId ? (
+          <Card style={{ gap: 6 }}>
+            <Line label="Prepaid session" value={tf('{n} of {t}', { n: b.packNo || 1, t: (s.packs.find((x) => x.id === b.packId) || { total: 0 }).total })} bold />
+            <Line label="Prepaid sessions left" value={String((s.packs.find((x) => x.id === b.packId) || { total: 0, used: 0 }).total - (s.packs.find((x) => x.id === b.packId) || { total: 0, used: 0 }).used)} />
+          </Card>
+        ) : null}
 
         {b.seriesId ? (
           <Pressable onPress={() => navigation.navigate('SeriesDetail', { id: b.seriesId })}>
@@ -75,15 +87,45 @@ export default function BookingDetail({ navigation, route }: any) {
         ) : null}
 
         {b.status === 'completed' ? (
-          <Section title="Rate your session">
-            <View style={{ flexDirection: 'row', gap: 6 }}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable key={n} accessibilityLabel={n + ' stars'} onPress={() => { setStars(n); toast.show('Thanks for your review.'); }}>
-                  <Icon name="star" size={30} color={n <= stars ? colors.coral : colors.border} />
-                </Pressable>
-              ))}
-            </View>
-          </Section>
+          myReview ? (
+            <Section title="Your review">
+              <Card style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  {[1, 2, 3, 4, 5].map((n) => <Icon key={n} name="star" size={18} color={n <= myReview.rating ? colors.coral : colors.border} />)}
+                </View>
+                {myReview.tags && myReview.tags.length ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{myReview.tags.map((t) => <Tag key={t} label={t} tone="gray" />)}</View> : null}
+                {myReview.text ? <Text style={{ fontFamily: fonts.regular, fontSize: 13, lineHeight: 20, color: colors.gray }}>{myReview.text}</Text> : null}
+                {s.replies[myReview.id] ? (
+                  <View style={{ backgroundColor: colors.pale, borderRadius: 12, padding: 10 }}>
+                    <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.coralDark }}>Reply from the professional</Text>
+                    <Text style={{ fontFamily: fonts.regular, fontSize: 12.5, color: colors.coralDarkest }}>{s.replies[myReview.id]}</Text>
+                  </View>
+                ) : null}
+              </Card>
+            </Section>
+          ) : (
+            <Section title="Rate your session">
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Pressable key={n} accessibilityLabel={n + ' stars'} onPress={() => setStars(n)}>
+                    <Icon name="star" size={32} color={n <= stars ? colors.coral : colors.border} />
+                  </Pressable>
+                ))}
+              </View>
+              {stars > 0 ? (
+                <View style={{ gap: 12 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                    {['On time', 'Professional', 'Clear plan', 'Friendly', 'Great value'].map((t) => (
+                      <Chip key={t} label={t} on={rtags.includes(t)} onPress={() => setRtags(rtags.includes(t) ? rtags.filter((x) => x !== t) : [...rtags, t])} />
+                    ))}
+                  </View>
+                  <Field label="Tell others about your session (optional)" value={rtext} onChangeText={(v) => setRtext(v.slice(0, 500))} multiline style={{ height: 100, paddingTop: 12 }} />
+                  <Btn label="Post review" onPress={() => { api.addReview(b.id, stars, rtext.trim(), rtags); toast.show('Thanks for your review.'); }} />
+                  <Text style={styles.cap}>Your review is public and shows your first name and the first letter of your last name.</Text>
+                </View>
+              ) : null}
+            </Section>
+          )
         ) : null}
 
         {future ? (
@@ -98,7 +140,7 @@ export default function BookingDetail({ navigation, route }: any) {
 
         {panel === 'cancel' ? (
           <Panel title="Cancel this session?">
-            <Notice icon={early ? 'gift' : 'alert-circle'} text={early ? 'More than 24 hours before the session: you get a rebooking credit, valid for 30 days.' : 'Less than 24 hours before the session: the session is charged in full.'} />
+            <Notice icon={early ? 'gift' : 'alert-circle'} text={early ? (b.packId ? 'More than 24 hours before the session: the session goes back to your prepaid balance and you can book it again any time.' : 'More than 24 hours before the session: you get a rebooking credit, valid for 30 days.') : 'Less than 24 hours before the session: the session is charged in full.'} />
             <Btn label="Yes, cancel" kind="danger" onPress={doCancel} />
             <Btn label="Keep booking" kind="outline" onPress={() => setPanel('')} />
           </Panel>

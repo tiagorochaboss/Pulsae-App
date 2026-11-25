@@ -33,11 +33,19 @@ import Confirmed from './src/screens/customer/Confirmed';
 import Bookings from './src/screens/customer/Bookings';
 import BookingDetail from './src/screens/customer/BookingDetail';
 import SeriesDetail from './src/screens/customer/SeriesDetail';
-import CustomerProfile, { Credits, NotifSettings, PaymentMethods, PersonalDetails, SavedPros } from './src/screens/customer/Profile';
+import CustomerProfile, { Credits, Prepaid, SavedPros } from './src/screens/customer/Profile';
+import { ChangeContact, ChangePassword, LanguageScreen, NotifSettings, PersonalDetails, Security } from './src/screens/shared/Account';
+import { AddCard, PaymentMethods } from './src/screens/shared/Payments';
+import { Legal, LegalDoc } from './src/screens/shared/Legal';
+import ProClients from './src/screens/pro/ProClients';
+import ProReviews from './src/screens/pro/ProReviews';
 
 import Chat from './src/screens/shared/Chat';
+import Inbox from './src/screens/shared/Inbox';
+import ProfilePhoto from './src/screens/shared/ProfilePhoto';
+import DeleteAccount from './src/screens/shared/DeleteAccount';
 import Notifications from './src/screens/shared/Notifications';
-import Community from './src/screens/shared/Community';
+import Community, { NewPost, PostDetail } from './src/screens/shared/Community';
 import { AddAddress, SavedAddresses } from './src/screens/shared/SavedAddresses';
 import { ContactUs, HelpCenter } from './src/screens/shared/Help';
 
@@ -47,7 +55,9 @@ import Earnings from './src/screens/pro/Earnings';
 import Availability from './src/screens/pro/Availability';
 import ServiceArea from './src/screens/pro/ServiceArea';
 import ProProfile from './src/screens/pro/ProProfile';
-import ProSettings, { Bank, Docs } from './src/screens/pro/ProSettings';
+import ProSettings, { Bank } from './src/screens/pro/ProSettings';
+import { DocUpload, Docs } from './src/screens/pro/Documents';
+import MyMedia from './src/screens/pro/MyMedia';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -72,7 +82,7 @@ function CustomerTabs() {
       <Tab.Screen name="Discover" component={Discover} options={o('search', 'Discover')} />
       <Tab.Screen name="Bookings" component={Bookings} options={o('calendar', 'Bookings')} />
       <Tab.Screen name="Community" component={Community} options={o('users', 'Community')} />
-      <Tab.Screen name="Profile" component={CustomerProfile} options={o('user', 'Profile')} />
+      <Tab.Screen name="Settings" component={CustomerProfile} options={o('settings', 'Settings')} />
     </Tab.Navigator>
   );
 }
@@ -83,7 +93,7 @@ function ProTabs() {
     <Tab.Navigator>
       <Tab.Screen name="Bookings" component={ProBookings} options={o('calendar', 'Bookings')} />
       <Tab.Screen name="Community" component={Community} options={o('users', 'Community')} />
-      <Tab.Screen name="Profile" component={ProProfile} options={o('user', 'Profile')} />
+      <Tab.Screen name="Professional" component={ProProfile} options={o('award', 'Professional')} />
       <Tab.Screen name="Settings" component={ProSettings} options={o('settings', 'Settings')} />
     </Tab.Navigator>
   );
@@ -101,11 +111,23 @@ function CustomerApp() {
       <Stack.Screen name="BookingDetail" component={BookingDetail} />
       <Stack.Screen name="SeriesDetail" component={SeriesDetail} />
       <Stack.Screen name="Chat" component={Chat} />
+      <Stack.Screen name="Inbox" component={Inbox} />
       <Stack.Screen name="Notifications" component={Notifications} />
+      <Stack.Screen name="PostDetail" component={PostDetail} />
       <Stack.Screen name="SavedAddresses" component={SavedAddresses} />
       <Stack.Screen name="AddAddress" component={AddAddress} />
-      <Stack.Screen name="PersonalDetails" component={PersonalDetails} />
       <Stack.Screen name="PaymentMethods" component={PaymentMethods} />
+      <Stack.Screen name="AddCard" component={AddCard} />
+      <Stack.Screen name="Prepaid" component={Prepaid} />
+      <Stack.Screen name="PersonalDetails" component={PersonalDetails} />
+      <Stack.Screen name="ChangeContact" component={ChangeContact} />
+      <Stack.Screen name="ChangePassword" component={ChangePassword} />
+      <Stack.Screen name="Security" component={Security} />
+      <Stack.Screen name="ProfilePhoto" component={ProfilePhoto} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccount} />
+      <Stack.Screen name="Language" component={LanguageScreen} />
+      <Stack.Screen name="Legal" component={Legal} />
+      <Stack.Screen name="LegalDoc" component={LegalDoc} />
       <Stack.Screen name="Credits" component={Credits} />
       <Stack.Screen name="Saved" component={SavedPros} />
       <Stack.Screen name="NotifSettings" component={NotifSettings} />
@@ -122,14 +144,30 @@ function ProApp() {
       <Stack.Screen name="ProBookingDetail" component={ProBookingDetail} />
       <Stack.Screen name="ProDetail" component={ProDetail} />
       <Stack.Screen name="Chat" component={Chat} />
+      <Stack.Screen name="Inbox" component={Inbox} />
       <Stack.Screen name="Notifications" component={Notifications} />
       <Stack.Screen name="Earnings" component={Earnings} />
+      <Stack.Screen name="PostDetail" component={PostDetail} />
+      <Stack.Screen name="NewPost" component={NewPost} />
       <Stack.Screen name="Availability" component={Availability} />
       <Stack.Screen name="ServiceArea" component={ServiceArea} />
       <Stack.Screen name="SavedAddresses" component={SavedAddresses} />
       <Stack.Screen name="AddAddress" component={AddAddress} />
       <Stack.Screen name="Bank" component={Bank} />
+      <Stack.Screen name="ProClients" component={ProClients} />
+      <Stack.Screen name="ProReviews" component={ProReviews} />
+      <Stack.Screen name="PersonalDetails" component={PersonalDetails} />
+      <Stack.Screen name="ChangeContact" component={ChangeContact} />
+      <Stack.Screen name="ChangePassword" component={ChangePassword} />
+      <Stack.Screen name="Security" component={Security} />
+      <Stack.Screen name="ProfilePhoto" component={ProfilePhoto} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccount} />
+      <Stack.Screen name="Language" component={LanguageScreen} />
+      <Stack.Screen name="Legal" component={Legal} />
+      <Stack.Screen name="LegalDoc" component={LegalDoc} />
       <Stack.Screen name="Docs" component={Docs} />
+      <Stack.Screen name="DocUpload" component={DocUpload} />
+      <Stack.Screen name="MyMedia" component={MyMedia} />
       <Stack.Screen name="NotifSettings" component={NotifSettings} />
       <Stack.Screen name="Help" component={HelpCenter} />
       <Stack.Screen name="ContactUs" component={ContactUs} />
@@ -144,7 +182,7 @@ function Root() {
   const { api } = useStore();
   const [phase, setPhase] = useState<Phase>('splash');
   const [role, setRole] = useState<Role>('customer');
-  const [signup, setSignup] = useState<SignupData>({ first: '', last: '', gender: '', mobile: '', email: '', profession: '' });
+  const [signup, setSignup] = useState<SignupData>({ first: '', last: '', gender: '', mobile: '', email: '', profession: '', iso: 'SA', phone: '' });
 
   let body: React.ReactNode;
   if (phase === 'splash') body = <Splash onDone={() => setPhase('login')} />;
@@ -181,10 +219,10 @@ function Root() {
         email={signup.email}
         onBack={() => setPhase('signup')}
         onDone={() => {
-          if (role === 'customer') {
-            api.setCustomerName((signup.first + ' ' + signup.last).trim() || 'Customer Name');
-            setPhase('prefs');
-          } else setPhase('credentials');
+          const patch = { first: signup.first, last: signup.last, gender: signup.gender, email: signup.email, iso: signup.iso, phone: signup.phone };
+          if (signup.first.trim()) api.updateAccount(role, patch);
+          if (role === 'customer') setPhase('prefs');
+          else setPhase('credentials');
         }}
       />
     );

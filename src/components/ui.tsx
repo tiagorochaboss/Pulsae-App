@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+  Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleProp,
@@ -142,10 +144,11 @@ export function Field({ label, error, ...props }: { label: string; error?: strin
   );
 }
 
-export function Avatar({ size = 48, icon = 'user' }: { size?: number; icon?: any }) {
+export function Avatar({ size = 48, icon = 'user', uri, bg }: { size?: number; icon?: any; uri?: string; bg?: string }) {
+  if (uri) return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.pale }} />;
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name={icon} size={size * 0.5} color={colors.coralLight} />
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg || colors.pale, alignItems: 'center', justifyContent: 'center' }}>
+      <Icon name={icon} size={size * 0.5} color={bg ? colors.white : colors.coralLight} />
     </View>
   );
 }
@@ -174,8 +177,27 @@ export function Header({ title, onBack, right }: { title: string; onBack?: () =>
         </Pressable>
       ) : null}
       <Text style={{ flex: 1, fontFamily: fonts.semibold, fontSize: onBack ? 18 : 24, color: colors.ink }}>{title}</Text>
+      {onBack ? null : <LangButton />}
       {right}
     </View>
+  );
+}
+
+// One-tap English / Arabic switch. It sits at the end of the top bar on the main screens of both apps
+// (right in English, left in Arabic), next to the bell, where people look for it.
+export function LangButton() {
+  const { lang, setLang } = useI18n();
+  return (
+    <Pressable
+      accessibilityLabel="Language"
+      accessibilityRole="button"
+      hitSlop={6}
+      onPress={() => setLang(lang === 'en' ? 'ar' : 'en')}
+      style={{ height: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+    >
+      <Feather name="globe" size={15} color={colors.coralDark} />
+      <RNText style={{ fontFamily: lang === 'en' ? 'Cairo_600SemiBold' : fonts.semibold, fontSize: 13, color: colors.ink }}>{lang === 'en' ? 'عربي' : 'EN'}</RNText>
+    </Pressable>
   );
 }
 
@@ -183,6 +205,19 @@ export function BellButton({ count, onPress }: { count: number; onPress: () => v
   return (
     <Pressable accessibilityLabel="Notifications" onPress={onPress} style={styles.iconBtn}>
       <Icon name="bell" />
+      {count > 0 ? (
+        <View style={{ position: 'absolute', top: 6, end: 6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.coral, borderWidth: 2, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' }}>
+          <RNText style={{ color: colors.white, fontSize: 8, fontFamily: fonts.semibold }}>{count}</RNText>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+export function MessagesButton({ count, onPress }: { count: number; onPress: () => void }) {
+  return (
+    <Pressable accessibilityLabel="Messages" onPress={onPress} style={styles.iconBtn}>
+      <Icon name="message-circle" />
       {count > 0 ? (
         <View style={{ position: 'absolute', top: 6, end: 6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.coral, borderWidth: 2, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' }}>
           <RNText style={{ color: colors.white, fontSize: 8, fontFamily: fonts.semibold }}>{count}</RNText>
@@ -230,14 +265,14 @@ export function Radio({ on, label, sub, onPress }: { on: boolean; label: string;
   );
 }
 
-export function Stepper({ value, onChange, min = 0, max = 99 }: { value: number; onChange: (v: number) => void; min?: number; max?: number }) {
+export function Stepper({ value, onChange, min = 0, max = 99, step = 1, format }: { value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number; format?: (v: number) => string }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <Pressable accessibilityLabel="Decrease" onPress={() => onChange(Math.max(min, value - 1))} style={[styles.iconBtn, { width: 36, height: 36 }]}>
+      <Pressable accessibilityLabel="Decrease" onPress={() => onChange(Math.max(min, value - step))} style={[styles.iconBtn, { width: 36, height: 36 }]}>
         <Icon name="minus" size={16} />
       </Pressable>
-      <Text style={{ fontFamily: fonts.semibold, fontSize: 15, minWidth: 28, textAlign: 'center', color: colors.ink }}>{String(value)}</Text>
-      <Pressable accessibilityLabel="Increase" onPress={() => onChange(Math.min(max, value + 1))} style={[styles.iconBtn, { width: 36, height: 36 }]}>
+      <Text style={{ fontFamily: fonts.semibold, fontSize: 15, minWidth: format ? 76 : 28, textAlign: 'center', color: colors.ink }}>{format ? format(value) : String(value)}</Text>
+      <Pressable accessibilityLabel="Increase" onPress={() => onChange(Math.min(max, value + step))} style={[styles.iconBtn, { width: 36, height: 36 }]}>
         <Icon name="plus" size={16} />
       </Pressable>
     </View>
@@ -344,6 +379,96 @@ export function useToast() {
     </View>
   ) : null;
   return { show, node };
+}
+
+// Password input with a show/hide button.
+export function PasswordField({ label, error, ...props }: { label: string; error?: string } & TextInputProps) {
+  const { t, rtl } = useI18n();
+  const [show, setShow] = useState(false);
+  return (
+    <View style={{ gap: 6 }}>
+      <Text style={styles.label}>{label}</Text>
+      <View>
+        <TextInput
+          placeholderTextColor="#9A908B"
+          autoCapitalize="none"
+          autoCorrect={false}
+          {...props}
+          secureTextEntry={!show}
+          placeholder={props.placeholder ? t(props.placeholder) : undefined}
+          style={[styles.input, { textAlign: rtl ? 'right' : 'left', paddingEnd: 48 }, error ? { borderColor: colors.coral } : null, props.style]}
+        />
+        <Pressable accessibilityLabel={show ? 'Hide password' : 'Show password'} onPress={() => setShow(!show)} style={{ position: 'absolute', end: 6, top: 0, bottom: 0, width: 40, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={show ? 'eye-off' : 'eye'} size={18} color={colors.gray} />
+        </Pressable>
+      </View>
+      {error ? <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.coralDark }}>{error}</Text> : null}
+    </View>
+  );
+}
+
+// Two or three way switch, e.g. Mobile / Email.
+export function Segmented({ options, value, onChange }: { options: { key: string; label: string }[]; value: string; onChange: (k: string) => void }) {
+  return (
+    <View style={{ flexDirection: 'row', backgroundColor: colors.soft, borderRadius: 14, padding: 4 }}>
+      {options.map((o) => (
+        <Pressable key={o.key} onPress={() => onChange(o.key)} accessibilityRole="button" style={{ flex: 1, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: value === o.key ? colors.white : 'transparent' }}>
+          <Text style={{ fontFamily: value === o.key ? fonts.semibold : fonts.medium, fontSize: 13, color: value === o.key ? colors.ink : colors.gray }}>{o.label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+// Centered message box over a dimmed background.
+export function Popup({ visible, title, onClose, children, action, actionLabel = 'Got it' }: { visible: boolean; title: string; onClose: () => void; children: React.ReactNode; action?: () => void; actionLabel?: string }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(35,24,21,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <Pressable onPress={() => {}} style={{ width: '100%', maxWidth: 420, maxHeight: '85%', backgroundColor: colors.white, borderRadius: 24, padding: 20, gap: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Text style={[styles.h2, { flex: 1, fontSize: 18 }]}>{title}</Text>
+            <Pressable accessibilityLabel="Close" onPress={onClose} style={[styles.iconBtn, { width: 36, height: 36 }]}>
+              <Icon name="x" size={16} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ gap: 12 }}>{children}</ScrollView>
+          <Btn label={actionLabel} onPress={action || onClose} />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// "Verified" badge. Tapping it explains what the badge means.
+export function VerifiedBadge({ cert, tone = 'pale' }: { cert?: string; tone?: 'pale' | 'dark' }) {
+  const [open, setOpen] = useState(false);
+  const row = (icon: any, t1: string, t2: string) => (
+    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+      <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={17} color={colors.coralDark} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 14, color: colors.ink }}>{t1}</Text>
+        <Text style={styles.cap}>{t2}</Text>
+      </View>
+    </View>
+  );
+  return (
+    <>
+      <Pressable accessibilityRole="button" accessibilityLabel="What does Verified mean?" onPress={() => setOpen(true)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', height: 22, paddingHorizontal: 8, borderRadius: 11, backgroundColor: tone === 'dark' ? colors.ink : colors.pale }}>
+        <Icon name="check-circle" size={12} color={tone === 'dark' ? colors.white : colors.coralDark} />
+        <Text style={{ color: tone === 'dark' ? colors.white : colors.coralDark, fontFamily: fonts.medium, fontSize: 10 }}>Verified</Text>
+      </Pressable>
+      <Popup visible={open} title="What “Verified” means" onClose={() => setOpen(false)}>
+        <Text style={styles.p}>Before a professional appears on Pulsae, our team checks their documents. A Verified badge means these checks were completed:</Text>
+        {row('user-check', 'Identity', 'Their national ID or Iqama matches the person who signed up.')}
+        {row('award', 'Licence or certificate', cert ? 'Their ' + cert + ' was checked against the document they uploaded.' : 'Their professional licence or certificate was checked against the document they uploaded.')}
+        {row('briefcase', 'Experience', 'The years of experience shown on the profile were reviewed.')}
+        <Text style={styles.cap}>Verification is about who the professional is and what they are qualified to do. Ratings and reviews come only from real, completed sessions on Pulsae.</Text>
+      </Popup>
+    </>
+  );
 }
 
 export const styles = StyleSheet.create({
